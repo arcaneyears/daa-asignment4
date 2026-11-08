@@ -89,11 +89,3 @@ GitHub Actions runs the tests and a quick experiment on every push to `main`.
 ## Git
 
 Work is on `main`; the release is tagged `v1.0`.
-
-## AI use acknowledgement
-
-I used Claude (Anthropic) as an assistant while working on this assignment: to discuss the design,
-to help write and review the Java code, tests and experiment, and to help draft the report text
-and plotting code. I reviewed every file, ran the tests and the experiment myself, and I can explain each
-algorithm, the counters and the complexity results at the defense. All algorithms are implemented in this
-repository; no library is used for them.
