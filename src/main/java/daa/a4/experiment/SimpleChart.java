@@ -16,13 +16,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
-/**
- * A tiny XY line chart drawn with java.awt and saved as PNG.
- * Supports a title, labeled axes, a legend, markers, dashed lines and log axes.
- * Written for this project so the experiment needs no chart library.
- */
 public final class SimpleChart {
-
     private static final Color[] PALETTE = {
             new Color(0x1f77b4), new Color(0xd62728), new Color(0x2ca02c),
             new Color(0xff7f0e), new Color(0x9467bd), new Color(0x8c564b)};
@@ -61,8 +55,6 @@ public final class SimpleChart {
         return series.isEmpty();
     }
 
-    // ------------------------------------------------------------------ scales
-
     private double tx(double v, boolean log) {
         return log ? Math.log10(v) : v;
     }
@@ -81,14 +73,14 @@ public final class SimpleChart {
             double a = Math.log10(lo);
             double b = Math.log10(hi);
             double span = Math.max(b - a, 0.5);
-            // small margin on x; on y extra room at the top for the legend
+
             if (xAxis) return new double[]{a - 0.05 * span, b + 0.05 * span};
-            // keep a free band at the top that is as tall as the legend
+
             double f = Math.min(0.6, (series.size() * 24 + 12 + 40.0) / (height - top - bottom));
             double lowPad = 0.05 * span;
             return new double[]{a - lowPad, b + (span + lowPad) * f / (1 - f)};
         }
-        if (!xAxis) lo = Math.min(lo, 0);   // linear y starts at 0 so ratios are honest
+        if (!xAxis) lo = Math.min(lo, 0);
         if (lo == hi) hi = lo + 1;
         double step = niceStep((hi - lo) / 6);
         return new double[]{Math.floor(lo / step) * step, Math.ceil(hi / step) * step};
@@ -116,7 +108,6 @@ public final class SimpleChart {
         return t;
     }
 
-    /** On a log x axis the ticks are the sizes that were actually measured. */
     private List<Double> dataTicksX() {
         java.util.TreeSet<Double> set = new java.util.TreeSet<>();
         for (Series s : series) for (double v : s.x()) if (v > 0) set.add(Math.log10(v));
@@ -137,8 +128,6 @@ public final class SimpleChart {
         return String.format(Locale.ROOT, "%.2f", v);
     }
 
-    // ------------------------------------------------------------------ drawing
-
     public void save(Path file) throws IOException {
         BufferedImage img = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
         Graphics2D g = img.createGraphics();
@@ -152,13 +141,11 @@ public final class SimpleChart {
         double[] xr = range(true, logX);
         double[] yr = range(false, logY);
 
-        // title
         g.setColor(Color.BLACK);
         g.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 22));
         FontMetrics fm = g.getFontMetrics();
         g.drawString(title, (width - fm.stringWidth(title)) / 2, 42);
 
-        // grid + tick labels
         g.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 15));
         fm = g.getFontMetrics();
         for (double t : logX ? dataTicksX() : ticks(xr, false)) {
@@ -181,7 +168,6 @@ public final class SimpleChart {
         g.setStroke(new BasicStroke(1.5f));
         g.drawRect(left, top, pw, ph);
 
-        // axis titles
         g.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 17));
         fm = g.getFontMetrics();
         g.drawString(xTitle, left + (pw - fm.stringWidth(xTitle)) / 2, height - 30);
@@ -190,7 +176,6 @@ public final class SimpleChart {
         g.drawString(yTitle, -(top + (ph + fm.stringWidth(yTitle)) / 2), 30);
         g.setTransform(old);
 
-        // series
         List<int[]> drawn = new ArrayList<>();
         for (Series s : series) {
             g.setColor(s.color());
@@ -217,7 +202,6 @@ public final class SimpleChart {
             }
         }
 
-        // legend (top-left inside the plot)
         g.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 15));
         fm = g.getFontMetrics();
         int lw = 0;

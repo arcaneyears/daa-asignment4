@@ -16,7 +16,6 @@
         <junit.version>5.10.2</junit.version>
     </properties>
 
-    <!-- The only dependency is JUnit 5. Plots are drawn with plain java.awt (no Python, no chart library). -->
     <dependencies>
         <dependency>
             <groupId>org.junit.jupiter</groupId>
@@ -39,7 +38,6 @@
                 <version>3.2.5</version>
             </plugin>
             <plugin>
-                <!-- mvn exec:java runs the whole experiment: results.csv + plots -->
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>exec-maven-plugin</artifactId>
                 <version>3.1.1</version>

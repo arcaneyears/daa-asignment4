@@ -5,12 +5,7 @@ import daa.a4.metrics.Counters;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Naive search: try every start position s = 0..n-m and compare character by character
- * until a mismatch or the end of the pattern. Worst case O((n-m+1) * m).
- */
 public final class NaiveSearch implements StringSearch {
-
     private final Counters counters = new Counters();
 
     @Override

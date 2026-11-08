@@ -19,17 +19,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
 
-/**
- * Runs the whole experiment from the Experiment Design Card (REPORT.md):
- * writes results/results.csv (one row per measured run) and then draws results/plots/*.png.
- *
- * Usage: mvn -q compile exec:java                    (full experiment)
- *        mvn -q compile exec:java -Dexec.args="--quick"   (small sizes, for a fast check)
- * Options: --seed N, --runs N, --out DIR
- */
 public final class ExperimentRunner {
-
-    // ---- Sizes (see the Experiment Design Card) ----
     static final int[] ED_RECURSIVE_SIZES = {3, 6, 8, 10, 11, 12};
     static final int[] ED_DP_SIZES = {250, 500, 1000, 2000, 4000};
     static final String[] ED_INPUTS = {"identical", "typo", "disjoint"};
@@ -91,8 +81,6 @@ public final class ExperimentRunner {
         Plots.drawAll(csv, outDir.resolve("plots"));
     }
 
-    // ------------------------------------------------------------------ Edit Distance
-
     private void runEditDistance(int[] recSizes, int[] dpSizes) {
         EditDistance recursive = new RecursiveEditDistance();
         List<EditDistance> dp = List.of(new TableEditDistance(), new TwoRowEditDistance());
@@ -115,7 +103,7 @@ public final class ExperimentRunner {
     }
 
     private int measureEditDistance(EditDistance ed, String input, String[] ab, Integer expected) {
-        ed.distance(ab[0], ab[1]); // warm-up run, not recorded (JIT compilation)
+        ed.distance(ab[0], ab[1]);
         int result = -1;
         for (int run = 1; run <= runs; run++) {
             ed.counters().reset();
@@ -131,8 +119,6 @@ public final class ExperimentRunner {
         System.out.printf(Locale.ROOT, "  %-14s %-9s n=%-5d d=%d%n", ed.name(), input, ab[0].length(), result);
         return result;
     }
-
-    // ------------------------------------------------------------------ String search
 
     private void runSearchVaryN(int[] sizes) {
         for (String input : SEARCH_INPUTS) {
@@ -163,7 +149,7 @@ public final class ExperimentRunner {
     }
 
     private List<Integer> measureSearch(StringSearch s, String input, String[] tp) {
-        s.search(tp[0], tp[1]); // warm-up
+        s.search(tp[0], tp[1]);
         List<Integer> result = new ArrayList<>();
         for (int run = 1; run <= runs; run++) {
             s.counters().reset();
@@ -177,8 +163,6 @@ public final class ExperimentRunner {
                 s.name(), input, tp[0].length(), tp[1].length(), result.size());
         return result;
     }
-
-    // ------------------------------------------------------------------ CSV
 
     private void write(String algorithm, String family, String input, int n, int m, int run, long nanos,
                        Counters c, long result) {

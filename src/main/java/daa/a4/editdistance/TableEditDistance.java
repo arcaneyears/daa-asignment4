@@ -2,16 +2,7 @@ package daa.a4.editdistance;
 
 import daa.a4.metrics.Counters;
 
-/**
- * Version B: bottom-up DP with an (n+1) x (m+1) table. Time O(n*m), memory O(n*m).
- *
- * State:      dp[i][j] = edit distance between the prefixes a[0..i) and b[0..j).
- * Transition: dp[i][j] = dp[i-1][j-1] if a[i-1] == b[j-1],
- *             else 1 + min(dp[i-1][j], dp[i][j-1], dp[i-1][j-1]).
- * Base case:  dp[0][j] = j, dp[i][0] = i. Answer is dp[n][m].
- */
 public final class TableEditDistance implements EditDistance {
-
     private final Counters counters = new Counters();
 
     @Override

@@ -1,6 +1,5 @@
 package daa.a4.experiment;
 
-
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.nio.charset.StandardCharsets;
@@ -15,15 +14,7 @@ import java.util.Map;
 import java.util.function.Predicate;
 import java.util.function.ToDoubleFunction;
 
-/**
- * Reads results.csv, takes the median time over the runs of every configuration,
- * writes results/summary.csv and draws the PNG plots into results/plots/.
- *
- * Can also be run alone: mvn -q compile exec:java -Dexec.mainClass=daa.a4.experiment.Plots
- */
 public final class Plots {
-
-    /** One configuration (algorithm, input, n, m) with the median time over its runs. */
     record Point(String algorithm, String family, String input, int n, int m, int runs,
                  double medianMs, long subproblems, long comparisons, long memoryCells, long result) {
     }
@@ -39,7 +30,6 @@ public final class Plots {
         List<Point> pts = aggregate(csv);
         writeSummary(pts, csv.resolveSibling("summary.csv"));
 
-        // 1. Recursive Edit Distance: calls vs n, log y
         SimpleChart c1 = chart("Edit Distance A (recursive): subproblem calls vs n",
                 "string length n = m (characters)", "recursive calls (count, log scale)", false, true);
         for (String in : ExperimentRunner.ED_INPUTS) {
@@ -48,7 +38,6 @@ public final class Plots {
         }
         save(c1, plotsDir, "1_ed_recursive_calls");
 
-        // 2. Table vs two rows: time vs n, log-log
         SimpleChart c2 = chart("Edit Distance B (table) vs C (two rows): median time vs n",
                 "string length n = m (characters, log scale)", "median time of 5 runs (ms, log scale)", true, true);
         for (String alg : List.of("ED-B-table", "ED-C-two-rows")) {
@@ -59,7 +48,6 @@ public final class Plots {
         }
         save(c2, plotsDir, "2_ed_dp_time");
 
-        // 3. Memory: table vs two rows
         SimpleChart c3 = chart("Edit Distance: extra memory allocated vs n",
                 "string length n = m (characters, log scale)", "int cells allocated (count, log scale)", true, true);
         for (String alg : List.of("ED-B-table", "ED-C-two-rows")) {
@@ -68,7 +56,6 @@ public final class Plots {
         }
         save(c3, plotsDir, "3_ed_memory");
 
-        // 4. Search: comparisons per text character (ratio)
         SimpleChart c4 = chart("String search: character comparisons per text character",
                 "text length n (characters, log scale)", "total comparisons / n (ratio)", true, true);
         for (String alg : List.of("Naive", "KMP")) {
@@ -79,7 +66,6 @@ public final class Plots {
         }
         save(c4, plotsDir, "4_search_comparisons_ratio");
 
-        // 5. Worst case: comparisons vs pattern length m
         SimpleChart c5 = chart("String search, worst input (text A...A, pattern A...AB): comparisons vs m",
                 "pattern length m (characters, log scale)", "total comparisons (count, log scale)", true, true);
         for (String alg : List.of("Naive", "KMP")) {
@@ -88,7 +74,6 @@ public final class Plots {
         }
         save(c5, plotsDir, "5_search_vary_m");
 
-        // 6. Search time vs n
         SimpleChart c6 = chart("String search: median time vs n",
                 "text length n (characters, log scale)", "median time of 5 runs (ms, log scale)", true, true);
         for (String alg : List.of("Naive", "KMP")) {
@@ -99,8 +84,6 @@ public final class Plots {
         }
         save(c6, plotsDir, "6_search_time");
     }
-
-    // ------------------------------------------------------------------ data
 
     static List<Point> aggregate(Path csv) throws IOException {
         List<String> lines = Files.readAllLines(csv, StandardCharsets.UTF_8);
@@ -146,8 +129,6 @@ public final class Plots {
             }
         }
     }
-
-    // ------------------------------------------------------------------ drawing
 
     private static SimpleChart chart(String title, String xTitle, String yTitle, boolean logX, boolean logY) {
         return new SimpleChart(title, xTitle, yTitle, logX, logY);
