@@ -83,7 +83,7 @@ REPORT.md
 
 Work is on `main`; the final version is tagged `v1.0`.
 
-GitHub repository: `<add your repository link here>`
+GitHub repository: https://github.com/arcaneyears/daa-asignment4 (branch `main`, tag `v1.0`)
 
 ## AI use acknowledgement
 
