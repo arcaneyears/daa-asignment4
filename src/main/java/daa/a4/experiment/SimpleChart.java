@@ -78,10 +78,15 @@ public final class SimpleChart {
             }
         }
         if (log) {
-            double a = Math.floor(Math.log10(lo));
-            double b = Math.ceil(Math.log10(hi * 1.6));
-            if (a == b) b = a + 1;
-            return new double[]{a, b};
+            double a = Math.log10(lo);
+            double b = Math.log10(hi);
+            double span = Math.max(b - a, 0.5);
+            // small margin on x; on y extra room at the top for the legend
+            if (xAxis) return new double[]{a - 0.05 * span, b + 0.05 * span};
+            // keep a free band at the top that is as tall as the legend
+            double f = Math.min(0.6, (series.size() * 24 + 12 + 40.0) / (height - top - bottom));
+            double lowPad = 0.05 * span;
+            return new double[]{a - lowPad, b + (span + lowPad) * f / (1 - f)};
         }
         if (!xAxis) lo = Math.min(lo, 0);   // linear y starts at 0 so ratios are honest
         if (lo == hi) hi = lo + 1;
@@ -99,13 +104,10 @@ public final class SimpleChart {
     private List<Double> ticks(double[] r, boolean log) {
         List<Double> t = new ArrayList<>();
         if (log) {
-            boolean fine = r[1] - r[0] <= 3;
-            for (int e = (int) r[0]; e <= (int) r[1]; e++) {
-                t.add((double) e);
-                if (fine && e < (int) r[1]) {
-                    t.add(e + Math.log10(2));
-                    t.add(e + Math.log10(5));
-                }
+            boolean fine = r[1] - r[0] <= 3.5;
+            for (int e = (int) Math.floor(r[0]); e <= (int) Math.ceil(r[1]); e++) {
+                double[] cand = fine ? new double[]{e, e + Math.log10(2), e + Math.log10(5)} : new double[]{e};
+                for (double v : cand) if (v >= r[0] - 1e-9 && v <= r[1] + 1e-9) t.add(v);
             }
         } else {
             double step = niceStep((r[1] - r[0]) / 6);
@@ -114,10 +116,18 @@ public final class SimpleChart {
         return t;
     }
 
-    private static String label(double v, boolean log) {
+    /** On a log x axis the ticks are the sizes that were actually measured. */
+    private List<Double> dataTicksX() {
+        java.util.TreeSet<Double> set = new java.util.TreeSet<>();
+        for (Series s : series) for (double v : s.x()) if (v > 0) set.add(Math.log10(v));
+        return new ArrayList<>(set);
+    }
+
+    private static String label(double v, boolean log, boolean xAxis) {
         if (log) {
             double real = Math.pow(10, v);
-            if (v >= -1e-9 && v <= 6.5) return String.format(Locale.ROOT, "%,d", Math.round(real));
+            if (v >= -1e-9 && v <= (xAxis ? 7.0 : 6.05))
+                return String.format(Locale.ROOT, "%,d", Math.round(real));
             if (v < 0 && v >= -3) return String.format(Locale.ROOT, "%." + (int) Math.ceil(-v - 1e-9) + "f", real);
             double mant = real / Math.pow(10, Math.floor(v + 1e-9));
             return String.format(Locale.ROOT, "%de%d", Math.round(mant), (int) Math.floor(v + 1e-9));
@@ -151,12 +161,12 @@ public final class SimpleChart {
         // grid + tick labels
         g.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 15));
         fm = g.getFontMetrics();
-        for (double t : ticks(xr, logX)) {
+        for (double t : logX ? dataTicksX() : ticks(xr, false)) {
             int px = left + (int) Math.round((t - xr[0]) / (xr[1] - xr[0]) * pw);
             g.setColor(new Color(0xe3e3e3));
             g.drawLine(px, top, px, top + ph);
             g.setColor(Color.DARK_GRAY);
-            String s = label(t, logX);
+            String s = label(t, logX, true);
             g.drawString(s, px - fm.stringWidth(s) / 2, top + ph + 22);
         }
         for (double t : ticks(yr, logY)) {
@@ -164,7 +174,7 @@ public final class SimpleChart {
             g.setColor(new Color(0xe3e3e3));
             g.drawLine(left, py, left + pw, py);
             g.setColor(Color.DARK_GRAY);
-            String s = label(t, logY);
+            String s = label(t, logY, false);
             g.drawString(s, left - 10 - fm.stringWidth(s), py + 5);
         }
         g.setColor(Color.BLACK);
@@ -181,6 +191,7 @@ public final class SimpleChart {
         g.setTransform(old);
 
         // series
+        List<int[]> drawn = new ArrayList<>();
         for (Series s : series) {
             g.setColor(s.color());
             Stroke stroke = s.dashed()
@@ -196,6 +207,11 @@ public final class SimpleChart {
                 if (prevX >= 0) g.drawLine(prevX, prevY, px, py);
                 g.setStroke(new BasicStroke(2f));
                 marker(g, s.marker(), px, py);
+                if (prevX >= 0) {
+                    for (int k = 0; k <= 20; k++) drawn.add(new int[]{prevX + (px - prevX) * k / 20, prevY + (py - prevY) * k / 20});
+                } else {
+                    drawn.add(new int[]{px, py});
+                }
                 prevX = px;
                 prevY = py;
             }
@@ -206,9 +222,24 @@ public final class SimpleChart {
         fm = g.getFontMetrics();
         int lw = 0;
         for (Series s : series) lw = Math.max(lw, fm.stringWidth(s.name()));
-        int lx = left + 14;
-        int ly = top + 14;
         int lh = series.size() * 24 + 12;
+        int boxW = lw + 70;
+        int[][] corners = {{left + 14, top + 14}, {left + pw - 14 - boxW, top + 14},
+                {left + pw - 14 - boxW, top + ph - 14 - lh}, {left + 14, top + ph - 14 - lh}};
+        int lx = corners[0][0];
+        int ly = corners[0][1];
+        int best = Integer.MAX_VALUE;
+        for (int[] c : corners) {
+            int hits = 0;
+            for (int[] d : drawn) {
+                if (d[0] >= c[0] - 8 && d[0] <= c[0] + boxW + 8 && d[1] >= c[1] - 8 && d[1] <= c[1] + lh + 8) hits++;
+            }
+            if (hits < best) {
+                best = hits;
+                lx = c[0];
+                ly = c[1];
+            }
+        }
         g.setColor(new Color(255, 255, 255, 235));
         g.fillRect(lx, ly, lw + 70, lh);
         g.setColor(Color.GRAY);
